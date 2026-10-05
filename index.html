@@ -1,0 +1,182 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Tasks</title>
+<style>
+  body {
+    font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+    max-width: 32rem;
+    margin: 3rem auto;
+    padding: 0 1rem;
+    color: #222;
+    line-height: 1.4;
+  }
+  h1 { font-size: 1.5rem; margin: 0 0 1rem; }
+  form { display: flex; gap: 0.5rem; margin-bottom: 1rem; }
+  input[type="text"] { flex: 1; padding: 0.4rem 0.5rem; font: inherit; }
+  button { font: inherit; padding: 0.3rem 0.7rem; cursor: pointer; }
+  ul { list-style: none; padding: 0; margin: 0; }
+  .task {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.4rem 0;
+    border-bottom: 1px solid #eee;
+  }
+  .title { flex: 1; overflow-wrap: anywhere; }
+  .done .title { text-decoration: line-through; color: #888; }
+  #empty { color: #888; }
+</style>
+</head>
+<body>
+<h1>Tasks</h1>
+<form id="add-form">
+  <input id="new-task" type="text" placeholder="What needs doing?" autocomplete="off">
+  <button type="submit">Add</button>
+</form>
+<ul id="tasks"></ul>
+<p id="empty">No tasks yet.</p>
+<script>
+// Task = { id: string, title: string, done: boolean }
+// tasks: Task[]          persisted under localStorage key 'tasks' as JSON
+// editingId: string|null  UI-only, never persisted; at most one row edits at a time
+
+const STORAGE_KEY = 'tasks';
+const form = document.getElementById('add-form');
+const newTask = document.getElementById('new-task');
+const list = document.getElementById('tasks');
+const empty = document.getElementById('empty');
+
+let tasks = load();
+let editingId = null;
+
+function isTask(t) {
+  return t !== null && typeof t === 'object' &&
+    typeof t.id === 'string' && typeof t.title === 'string' && typeof t.done === 'boolean';
+}
+
+function load() {
+  try {
+    const parsed = JSON.parse(localStorage.getItem(STORAGE_KEY));
+    return Array.isArray(parsed) && parsed.every(isTask) ? parsed : [];
+  } catch {
+    return [];
+  }
+}
+
+function addTask(tasks, title) {
+  return [...tasks, { id: crypto.randomUUID(), title, done: false }];
+}
+
+function renameTask(tasks, id, title) {
+  return tasks.map(t => (t.id === id ? { ...t, title } : t));
+}
+
+function toggleTask(tasks, id) {
+  return tasks.map(t => (t.id === id ? { ...t, done: !t.done } : t));
+}
+
+function removeTask(tasks, id) {
+  return tasks.filter(t => t.id !== id);
+}
+
+function commit(nextTasks) {
+  tasks = nextTasks;
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(tasks));
+  render();
+}
+
+function button(action, label) {
+  const b = document.createElement('button');
+  b.type = 'button';
+  b.dataset.action = action;
+  b.textContent = label;
+  return b;
+}
+
+function renderTask(task) {
+  const li = document.createElement('li');
+  li.className = task.done ? 'task done' : 'task';
+  li.dataset.id = task.id;
+
+  const checkbox = document.createElement('input');
+  checkbox.type = 'checkbox';
+  checkbox.dataset.action = 'toggle';
+  checkbox.checked = task.done;
+
+  let title;
+  if (task.id === editingId) {
+    title = document.createElement('input');
+    title.type = 'text';
+    title.className = 'edit';
+    title.dataset.action = 'edit-input';
+    title.value = task.title;
+  } else {
+    title = document.createElement('span');
+    title.className = 'title';
+    title.textContent = task.title;
+  }
+
+  li.append(checkbox, title, button('edit', 'Edit'), button('delete', 'Delete'));
+  return li;
+}
+
+function render() {
+  list.replaceChildren(...tasks.map(renderTask));
+  empty.hidden = tasks.length > 0;
+  const editInput = list.querySelector('.edit');
+  if (editInput) {
+    editInput.focus();
+    editInput.setSelectionRange(editInput.value.length, editInput.value.length);
+  }
+}
+
+// Re-rendering removes the focused input, which fires focusout; clearing editingId first makes that second save a no-op.
+function finishEdit(input) {
+  if (editingId === null) return;
+  const id = editingId;
+  const title = input.value.trim();
+  editingId = null;
+  commit(title ? renameTask(tasks, id, title) : tasks);
+}
+
+function cancelEdit() {
+  editingId = null;
+  render();
+}
+
+form.addEventListener('submit', e => {
+  e.preventDefault();
+  const title = newTask.value.trim();
+  if (!title) return;
+  commit(addTask(tasks, title));
+  newTask.value = '';
+});
+
+list.addEventListener('click', e => {
+  const action = e.target.dataset.action;
+  const id = e.target.closest('.task')?.dataset.id;
+  if (action === 'toggle') commit(toggleTask(tasks, id));
+  else if (action === 'delete') commit(removeTask(tasks, id));
+  else if (action === 'edit') {
+    editingId = id;
+    render();
+  }
+});
+
+list.addEventListener('keydown', e => {
+  if (e.target.dataset.action !== 'edit-input') return;
+  if (e.key === 'Enter') finishEdit(e.target);
+  else if (e.key === 'Escape') cancelEdit();
+});
+
+list.addEventListener('focusout', e => {
+  if (e.target.dataset.action === 'edit-input') finishEdit(e.target);
+});
+
+render();
+</script>
+</body>
+</html>
