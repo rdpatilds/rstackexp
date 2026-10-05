@@ -1,0 +1,23 @@
+{
+  "version": 1,
+  "hooks": {
+    "sessionStart": [{ "command": "node .cursor/hooks/trace.mjs" }],
+    "sessionEnd": [{ "command": "node .cursor/hooks/trace.mjs" }],
+    "beforeSubmitPrompt": [{ "command": "node .cursor/hooks/trace.mjs" }],
+    "preToolUse": [{ "command": "node .cursor/hooks/trace.mjs" }],
+    "postToolUse": [{ "command": "node .cursor/hooks/trace.mjs" }],
+    "postToolUseFailure": [{ "command": "node .cursor/hooks/trace.mjs" }],
+    "subagentStart": [{ "command": "node .cursor/hooks/trace.mjs" }],
+    "subagentStop": [{ "command": "node .cursor/hooks/trace.mjs" }],
+    "beforeShellExecution": [{ "command": "node .cursor/hooks/trace.mjs" }],
+    "afterShellExecution": [{ "command": "node .cursor/hooks/trace.mjs" }],
+    "beforeMCPExecution": [{ "command": "node .cursor/hooks/trace.mjs" }],
+    "afterMCPExecution": [{ "command": "node .cursor/hooks/trace.mjs" }],
+    "beforeReadFile": [{ "command": "node .cursor/hooks/trace.mjs" }],
+    "afterFileEdit": [{ "command": "node .cursor/hooks/trace.mjs" }],
+    "afterAgentThought": [{ "command": "node .cursor/hooks/trace.mjs" }],
+    "afterAgentResponse": [{ "command": "node .cursor/hooks/trace.mjs" }],
+    "preCompact": [{ "command": "node .cursor/hooks/trace.mjs" }],
+    "stop": [{ "command": "node .cursor/hooks/trace.mjs" }]
+  }
+}
