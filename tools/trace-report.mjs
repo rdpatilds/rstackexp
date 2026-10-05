@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 // Usage:
 //   node tools/trace-report.mjs [events.jsonl]                 list root conversations
-//   node tools/trace-report.mjs [events.jsonl] --conv <id|prefix> [--out <dir>]
+//   node tools/trace-report.mjs [events.jsonl] --conv <id|prefix> [--also <id|prefix>]... [--out <dir>]
 // Writes <out>/timeline.md and <out>/run-events.jsonl for one root conversation and
 // every subagent conversation spawned under it (transitively).
 
@@ -63,7 +63,16 @@ if (!rootId) {
   process.exit(1);
 }
 
+// A subagent that never reached subagentStop (aborted mid-run) has no child_conversation_id
+// link. Pass --also <id-prefix> to pull its conversation in by hand.
 const members = new Set([rootId]);
+for (const extra of args.flatMap((a, i) => (a === "--also" ? [args[i + 1]] : []))) {
+  const id = [...new Set(events.map((e) => e.conversation_id))].find((c) => c.startsWith(extra));
+  if (id) {
+    members.add(id);
+    childToParent.set(id, rootId);
+  }
+}
 let grew = true;
 while (grew) {
   grew = false;
